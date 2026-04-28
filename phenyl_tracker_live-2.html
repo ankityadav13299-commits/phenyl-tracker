@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phenyl Tracker — Live</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0d0d0d;color:#e0e0e0;font-family:'Segoe UI',sans-serif;font-size:14px;min-height:100vh;}
+.wrap{max-width:720px;margin:0 auto;padding:16px;}
+.nav{display:flex;gap:8px;margin-bottom:1.5rem;border-bottom:1px solid #1e1e1e;padding-bottom:12px;flex-wrap:wrap;align-items:center;}
+.nav button{padding:8px 18px;border:1.5px solid #2a2a2a;border-radius:999px;font-size:13px;cursor:pointer;background:transparent;color:#888;}
+.nav button.active{background:#1a3a5c;color:#7ab8f5;border-color:#2a5a8c;font-weight:600;}
+.section{display:none;}.section.show{display:block;}
+h2{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;}
+.sub{font-size:12px;color:#555;margin-bottom:1.2rem;}
+label{font-size:12px;color:#888;display:block;margin-bottom:4px;margin-top:10px;}
+input,select,textarea{width:100%;font-size:14px;padding:9px 11px;border:1.5px solid #222;border-radius:8px;background:#111;color:#e0e0e0;outline:none;}
+input:focus,select:focus{border-color:#3a6a8c;}
+textarea{resize:vertical;min-height:60px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.sec-title{font-size:13px;font-weight:600;color:#aaa;margin:1.2rem 0 0.6rem;padding-bottom:5px;border-bottom:1px solid #1a1a1a;}
+.prod-block{background:#0f0f0f;border:1.5px solid #1a1a1a;border-radius:10px;padding:12px;margin-bottom:8px;}
+.prod-title{font-size:13px;font-weight:600;color:#bbb;margin-bottom:8px;}
+.size-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.size-lbl{font-size:12px;color:#666;width:44px;flex-shrink:0;}
+.size-inp{width:80px!important;text-align:center;font-size:13px;padding:7px;}
+.size-unit{font-size:11px;color:#333;width:38px;}
+.att-card{background:#0f0f0f;border:1.5px solid #1a1a1a;border-radius:9px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+.att-name{font-size:13px;color:#bbb;flex:1;}
+.att-btn{padding:5px 14px;font-size:12px;border:1.5px solid #2a2a2a;border-radius:999px;cursor:pointer;background:transparent;color:#555;min-width:68px;text-align:center;transition:all 0.15s;}
+.att-btn.present{background:#0f2e0f;color:#5cb85c;border-color:#1a5c1a;}
+.att-btn.absent{background:#2e0f0f;color:#d9534f;border-color:#5c1a1a;}
+.hint{font-size:11px;color:#333;margin-bottom:8px;}
+.btn{padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid;transition:all 0.15s;}
+.btn-primary{background:#1a3a5c;color:#7ab8f5;border-color:#2a5a8c;width:100%;padding:13px;font-size:15px;margin-top:1.2rem;border-radius:10px;}
+.btn-primary:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-green{background:#0f2a14;color:#5cb87a;border-color:#1a5c22;}
+.btn-blue{background:#0f1a2e;color:#7ab8f5;border-color:#1a3a5c;}
+.btn-orange{background:#2a1a00;color:#f0a030;border-color:#5c3a00;}
+.btn-red{background:#2e0f0f;color:#d9534f;border-color:#5c1a1a;}
+.action-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.2rem;}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:10px;font-size:13px;font-weight:500;display:none;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px #000a;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:8px;margin-bottom:1.2rem;}
+.stat{background:#0f0f0f;border:1.5px solid #1a1a1a;border-radius:10px;padding:10px;text-align:center;}
+.stat .sl{font-size:10px;color:#555;margin-bottom:3px;}
+.stat .sv{font-size:20px;font-weight:700;color:#fff;}
+.filter-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center;}
+.filter-row select{width:auto;min-width:120px;}
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1.5px solid #1a1a1a;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead{background:#111;}
+th{padding:9px 10px;text-align:left;color:#888;font-weight:600;border-bottom:1px solid #1a1a1a;white-space:nowrap;}
+td{padding:8px 10px;border-bottom:1px solid #111;color:#ccc;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#0f0f0f;}
+.badge{font-size:10px;padding:2px 7px;border-radius:5px;display:inline-block;margin:1px;}
+.badge-p{background:#0f2e0f;color:#5cb85c;}
+.badge-a{background:#2e0f0f;color:#d9534f;}
+.badge-item{background:#161616;color:#aaa;border:1px solid #222;}
+.empty{text-align:center;padding:2rem;color:#333;font-size:13px;}
+.import-box{background:#0f0f0f;border:1.5px dashed #2a2a2a;border-radius:10px;padding:16px;text-align:center;margin-bottom:1rem;}
+.import-box p{font-size:13px;color:#555;margin-bottom:10px;}
+#syncBar{display:flex;align-items:center;gap:7px;margin-left:auto;font-size:12px;font-weight:600;padding:5px 14px;border-radius:999px;border:1.5px solid #2a2a2a;background:#111;transition:all 0.3s;}
+#syncDot{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0;transition:all 0.3s;}
+.s-live{border-color:#1a5c1a!important;color:#5cb85c!important;}
+.s-live #syncDot{background:#5cb85c!important;box-shadow:0 0 8px #5cb85c;}
+.s-saving{border-color:#5c3a00!important;color:#f0a030!important;}
+.s-saving #syncDot{background:#f0a030!important;animation:blink 0.7s infinite;}
+.s-offline{border-color:#5c1a1a!important;color:#d9534f!important;}
+.s-offline #syncDot{background:#d9534f!important;}
+.s-connecting{border-color:#1a3a5c!important;color:#7ab8f5!important;}
+.s-connecting #syncDot{background:#7ab8f5!important;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.2;}}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div class="wrap">
+  <div class="nav">
+    <button class="active" onclick="showTab('entry',this)">📋 Daily Entry</button>
+    <button onclick="showTab('owner',this)">📊 Owner View</button>
+    <button onclick="showTab('share',this)">🔄 Share Data</button>
+    <div id="syncBar" class="s-connecting">
+      <span id="syncDot"></span>
+      <span id="syncLabel">Connecting...</span>
+    </div>
+  </div>
+
+  <!-- ENTRY TAB -->
+  <div id="entry" class="section show">
+    <h2>Daily Production Entry</h2>
+    <p class="sub">Fill today's data and tap Save Entry</p>
+    <label>Date</label>
+    <input type="date" id="eDate"/>
+    <div class="sec-title">Attendance</div>
+    <div id="attGrid"></div>
+    <div class="sec-title">Manufactured (bottles)</div>
+    <p class="hint">Leave 0 if not made today</p>
+    <div id="mfgBlocks"></div>
+    <div class="sec-title">Packed (boxes)</div>
+    <p class="hint">Leave 0 if not packed today</p>
+    <div id="packBlocks"></div>
+    <div class="sec-title">Raw Material & Tank</div>
+    <div style="background:#0f0f0f;border:1.5px solid #1a1a1a;border-radius:10px;padding:12px;margin-bottom:8px;">
+      <div class="row3">
+        <div><label>Chemical (L)</label><input type="number" id="rmChem" min="0" placeholder="0"/></div>
+        <div><label>Tank No.</label><input type="text" id="tankNo" placeholder="Tank 1"/></div>
+        <div><label>Capacity (L)</label><input type="number" id="tankCap" min="0" placeholder="0"/></div>
+      </div>
+    </div>
+    <label>Notes / Remarks</label>
+    <textarea id="eNotes" placeholder="Any issues, delays, extra info…"></textarea>
+    <button class="btn btn-primary" id="saveBtn" onclick="saveEntry()">Save Entry</button>
+  </div>
+
+  <!-- OWNER TAB -->
+  <div id="owner" class="section">
+    <h2>Owner Dashboard</h2>
+    <p class="sub">All entries — live synced across all devices</p>
+    <div class="action-bar">
+      <button class="btn btn-green" onclick="exportExcel()">⬇ Export Excel</button>
+      <button class="btn btn-orange" onclick="exportJSON()">⬇ Export JSON</button>
+      <button class="btn btn-blue" onclick="document.getElementById('importFile2').click()">⬆ Import JSON</button>
+      <input type="file" id="importFile2" accept=".json" style="display:none" onchange="importJSON(this)"/>
+    </div>
+    <div class="stat-grid" id="statGrid"></div>
+    <div class="filter-row">
+      <select id="fDate" onchange="renderOwner()"><option value="">All dates</option></select>
+      <select id="fFrag" onchange="renderOwner()"><option value="">All fragrances</option></select>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Attendance</th><th>Manufactured</th><th>Packed</th><th>Chemical</th><th>Tank</th><th>Notes</th><th></th></tr>
+        </thead>
+        <tbody id="ownerBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SHARE TAB -->
+  <div id="share" class="section">
+    <h2>Share Data</h2>
+    <p class="sub">Share this HTML file with employees — entries sync live</p>
+    <div class="sec-title">🔥 Live Sync Status</div>
+    <div style="background:#0f0f0f;border:1.5px solid #1a1a1a;border-radius:10px;padding:14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:13px;color:#aaa;">Firebase Connection</span>
+      <span id="shareStatusText" style="font-size:12px;font-weight:600;color:#7ab8f5;">Connecting...</span>
+    </div>
+    <div class="sec-title">📤 Export / Backup</div>
+    <div class="action-bar">
+      <button class="btn btn-green" onclick="exportJSON()">⬇ Download JSON</button>
+      <button class="btn btn-orange" onclick="exportExcel()">⬇ Download Excel</button>
+    </div>
+    <div class="sec-title">📥 Import from Employee</div>
+    <div class="import-box">
+      <p>Select a JSON file exported by any employee</p>
+      <button class="btn btn-blue" onclick="document.getElementById('importFile').click()">⬆ Import Employee Data</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(this)"/>
+    </div>
+    <div class="sec-title">📋 How it works</div>
+    <div style="background:#0f0f0f;border:1.5px solid #1a1a1a;border-radius:10px;padding:14px;font-size:12px;color:#666;line-height:2;">
+      1. Send this HTML file to all employees via WhatsApp<br>
+      2. Everyone opens it in their phone browser<br>
+      3. Employee saves entry → <b style="color:#5cb85c">owner sees it instantly</b> on Owner View<br>
+      4. Works offline → auto-syncs when internet comes back<br>
+      5. No app install needed — just open the HTML file
+    </div>
+  </div>
+</div>
+
+<!-- Load Firebase AFTER page -->
+<script>
+var FIREBASE_READY = false;
+var DB = null;
+var isOnline = false;
+
+const FRAGRANCES = ['Jasmine','Pine','Citrus','Lavender','Neem'];
+const SIZES      = ['500ml','1L','5L'];
+const EMPLOYEES  = ['Employee 1','Employee 2','Employee 3','Employee 4'];
+const LOCAL_KEY  = 'phenyl_v3';
+
+let entries    = [];
+let attendance = {};
+
+function localLoad(){ try{ entries=JSON.parse(localStorage.getItem(LOCAL_KEY)||'[]'); }catch(e){ entries=[]; } }
+function localSave(){ try{ localStorage.setItem(LOCAL_KEY,JSON.stringify(entries)); }catch(e){} }
+localLoad();
+
+function toast(msg,ok=true){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.style.background=ok?'#0f2e0f':'#2e0f0f';
+  el.style.color=ok?'#5cb85c':'#d9534f';
+  el.style.border='1px solid '+(ok?'#1a5c1a':'#5c1a1a');
+  el.style.display='block';
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.display='none',2800);
+}
+
+function setSyncUI(state, label){
+  const bar=document.getElementById('syncBar');
+  bar.className='s-'+state;
+  document.getElementById('syncLabel').textContent=label;
+  const s=document.getElementById('shareStatusText');
+  if(s){
+    s.textContent=label;
+    s.style.color=state==='live'?'#5cb85c':state==='saving'?'#f0a030':state==='offline'?'#d9534f':'#7ab8f5';
+  }
+}
+
+function today(){ return new Date().toISOString().split('T')[0]; }
+document.getElementById('eDate').value=today();
+
+function initAtt(){ attendance={}; EMPLOYEES.forEach(e=>attendance[e]='present'); }
+initAtt();
+
+function buildAttGrid(){
+  document.getElementById('attGrid').innerHTML=EMPLOYEES.map(emp=>{
+    const k=emp.replace(/\s+/g,'_');
+    return `<div class="att-card"><span class="att-name">${emp}</span>
+      <div style="display:flex;gap:6px;">
+        <button class="att-btn present" id="ap_${k}" onclick="setAtt('${emp}','present')">Present</button>
+        <button class="att-btn" id="aa_${k}" onclick="setAtt('${emp}','absent')">Absent</button>
+      </div></div>`;
+  }).join('');
+}
+function setAtt(emp,status){
+  attendance[emp]=status;
+  const k=emp.replace(/\s+/g,'_');
+  document.getElementById('ap_'+k).className='att-btn'+(status==='present'?' present':'');
+  document.getElementById('aa_'+k).className='att-btn'+(status==='absent'?' absent':'');
+}
+
+function buildBlocks(cid,pfx,unit){
+  document.getElementById(cid).innerHTML=FRAGRANCES.map(f=>`
+    <div class="prod-block"><div class="prod-title">${f}</div>
+    ${SIZES.map(s=>`<div class="size-row">
+      <span class="size-lbl">${s}</span>
+      <input type="number" class="size-inp" id="${pfx}_${f}_${s}" min="0" placeholder="0"/>
+      <span class="size-unit">${unit}</span>
+    </div>`).join('')}</div>`).join('');
+}
+function getBlocks(pfx){
+  const d={};
+  FRAGRANCES.forEach(f=>{ d[f]={}; SIZES.forEach(s=>{ d[f][s]=parseInt(document.getElementById(pfx+'_'+f+'_'+s).value)||0; }); });
+  return d;
+}
+function resetBlocks(pfx){ FRAGRANCES.forEach(f=>SIZES.forEach(s=>{ document.getElementById(pfx+'_'+f+'_'+s).value=''; })); }
+
+buildAttGrid();
+buildBlocks('mfgBlocks','mfg','btl');
+buildBlocks('packBlocks','pack','box');
+
+function showTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('show'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('show');
+  btn.classList.add('active');
+  if(id==='owner'){ populateFilters(); renderOwner(); }
+}
+
+function saveEntry(){
+  const date=document.getElementById('eDate').value;
+  if(!date){ toast('Select a date',false); return; }
+  const btn=document.getElementById('saveBtn');
+  btn.disabled=true; btn.textContent='Saving...';
+  const entry={
+    id:Date.now(), date,
+    mfg:getBlocks('mfg'), pack:getBlocks('pack'),
+    chemical:parseFloat(document.getElementById('rmChem').value)||0,
+    tankNo:document.getElementById('tankNo').value.trim(),
+    tankCap:parseFloat(document.getElementById('tankCap').value)||0,
+    notes:document.getElementById('eNotes').value.trim(),
+    attendance:{...attendance},
+    savedAt:new Date().toISOString()
+  };
+  entries.unshift(entry);
+  localSave();
+
+  if(FIREBASE_READY && isOnline && DB){
+    setSyncUI('saving','Saving...');
+    DB.ref('phenyl_entries/'+entry.id).set(entry)
+      .then(()=>{
+        setSyncUI('live','Live ✓');
+        toast('✓ Saved & synced live to all devices!');
+      })
+      .catch(err=>{
+        setSyncUI('offline','Offline');
+        toast('Saved locally. Firebase error: '+err.message, false);
+      })
+      .finally(()=>{ btn.disabled=false; btn.textContent='Save Entry'; });
+  } else {
+    btn.disabled=false; btn.textContent='Save Entry';
+    toast('✓ Saved locally (offline — will sync when connected)');
+  }
+
+  resetBlocks('mfg'); resetBlocks('pack');
+  initAtt(); buildAttGrid();
+  ['rmChem','tankNo','tankCap','eNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('eDate').value=today();
+}
+
+function mergeFirebaseData(data){
+  if(!data){ entries=[]; localSave(); refreshOwner(); return; }
+  const fbArr=Object.values(data);
+  const fbIds=new Set(fbArr.map(e=>e.id));
+  const localOnly=entries.filter(e=>!fbIds.has(e.id));
+  entries=[...fbArr,...localOnly];
+  entries.sort((a,b)=>b.id-a.id);
+  localSave();
+  populateFilters();
+  refreshOwner();
+}
+
+function refreshOwner(){
+  if(document.getElementById('owner').classList.contains('show')){
+    populateFilters(); renderOwner();
+  }
+}
+
+function pushLocalToFirebase(){
+  if(!DB||!isOnline||!entries.length) return;
+  entries.forEach(e=>{ DB.ref('phenyl_entries/'+e.id).set(e).catch(()=>{}); });
+}
+
+function populateFilters(){
+  const dates=[...new Set(entries.map(e=>e.date))].sort().reverse();
+  const fd=document.getElementById('fDate'),cv=fd.value;
+  fd.innerHTML='<option value="">All dates</option>'+dates.map(d=>`<option value="${d}">${d}</option>`).join('');
+  if(dates.includes(cv)) fd.value=cv;
+  const ff=document.getElementById('fFrag'),cfv=ff.value;
+  ff.innerHTML='<option value="">All fragrances</option>'+FRAGRANCES.map(f=>`<option value="${f}">${f}</option>`).join('');
+  if(FRAGRANCES.includes(cfv)) ff.value=cfv;
+}
+
+function renderOwner(){
+  const fd=document.getElementById('fDate').value;
+  const ff=document.getElementById('fFrag').value;
+  const filtered=entries.filter(e=>(!fd||e.date===fd));
+  let tb=0,tbox=0,tc=0,tp=0,ta=0;
+  filtered.forEach(e=>{
+    FRAGRANCES.forEach(fr=>SIZES.forEach(s=>{ tb+=e.mfg[fr]?.[s]||0; tbox+=e.pack[fr]?.[s]||0; }));
+    tc+=e.chemical||0;
+    if(e.attendance) Object.values(e.attendance).forEach(v=>v==='present'?tp++:ta++);
+  });
+  document.getElementById('statGrid').innerHTML=`
+    <div class="stat"><div class="sl">Entries</div><div class="sv">${filtered.length}</div></div>
+    <div class="stat"><div class="sl">Bottles</div><div class="sv">${tb}</div></div>
+    <div class="stat"><div class="sl">Boxes</div><div class="sv">${tbox}</div></div>
+    <div class="stat"><div class="sl">Chemical</div><div class="sv">${tc.toFixed(1)}L</div></div>
+    <div class="stat"><div class="sl">Present</div><div class="sv" style="color:#5cb85c">${tp}</div></div>
+    <div class="stat"><div class="sl">Absent</div><div class="sv" style="color:#d9534f">${ta}</div></div>`;
+  const tbody=document.getElementById('ownerBody');
+  if(!filtered.length){ tbody.innerHTML='<tr><td colspan="8" class="empty">No entries found</td></tr>'; return; }
+  tbody.innerHTML=filtered.map(e=>{
+    const attHtml=e.attendance
+      ?Object.entries(e.attendance).map(([n,s])=>`<span class="badge badge-${s==='present'?'p':'a'}">${n.replace('Employee ','Emp ')}</span>`).join(''):'—';
+    const mfgItems=[];
+    FRAGRANCES.forEach(fr=>{ if(!ff||ff===fr) SIZES.forEach(s=>{ if((e.mfg[fr]?.[s]||0)>0) mfgItems.push(`<span class="badge badge-item">${fr} ${s}×${e.mfg[fr][s]}</span>`); }); });
+    const packItems=[];
+    FRAGRANCES.forEach(fr=>{ if(!ff||ff===fr) SIZES.forEach(s=>{ if((e.pack[fr]?.[s]||0)>0) packItems.push(`<span class="badge badge-item">${fr} ${s}×${e.pack[fr][s]}</span>`); }); });
+    return `<tr>
+      <td style="white-space:nowrap;font-weight:600;color:#fff;">${e.date}</td>
+      <td>${attHtml||'—'}</td>
+      <td>${mfgItems.join('')||'—'}</td>
+      <td>${packItems.join('')||'—'}</td>
+      <td>${e.chemical?e.chemical+'L':'—'}</td>
+      <td>${e.tankNo||'—'}</td>
+      <td style="max-width:120px;color:#555;">${e.notes||'—'}</td>
+      <td><button class="btn btn-red" style="padding:3px 10px;font-size:11px;" onclick="delEntry(${e.id})">Del</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function delEntry(id){
+  if(!confirm('Delete this entry?')) return;
+  entries=entries.filter(e=>e.id!==id);
+  localSave();
+  if(DB&&isOnline) DB.ref('phenyl_entries/'+id).remove().catch(()=>{});
+  populateFilters(); renderOwner();
+  toast('Entry deleted');
+}
+
+function exportJSON(){
+  if(!entries.length){ toast('No entries to export',false); return; }
+  const blob=new Blob([JSON.stringify(entries,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='phenyl_data_'+today()+'.json'; a.click();
+  toast('✓ JSON downloaded!');
+}
+
+function importJSON(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const imported=JSON.parse(e.target.result);
+      if(!Array.isArray(imported)) throw new Error();
+      let added=0;
+      const existingIds=new Set(entries.map(x=>x.id));
+      imported.forEach(entry=>{
+        if(!existingIds.has(entry.id)){
+          entries.push(entry);
+          if(DB&&isOnline) DB.ref('phenyl_entries/'+entry.id).set(entry).catch(()=>{});
+          added++;
+        }
+      });
+      entries.sort((a,b)=>b.id-a.id);
+      localSave();
+      toast('✓ Imported '+added+' new entries ('+(imported.length-added)+' skipped)');
+      populateFilters(); renderOwner();
+    }catch(err){ toast('❌ Invalid file',false); }
+  };
+  reader.readAsText(file); input.value='';
+}
+
+function exportExcel(){
+  if(!entries.length){ toast('No entries',false); return; }
+  const wb=XLSX.utils.book_new();
+  const h=['Date',...FRAGRANCES.flatMap(f=>SIZES.map(s=>'Mfg '+f+' '+s)),...FRAGRANCES.flatMap(f=>SIZES.map(s=>'Pack '+f+' '+s)),'Total Btl','Total Box','Chemical(L)','Tank','TankCap',...EMPLOYEES,'Notes'];
+  const rows=entries.map(e=>{
+    let tb=0,tbox=0;
+    const mc=FRAGRANCES.flatMap(f=>SIZES.map(s=>{ const v=e.mfg[f]?.[s]||0; tb+=v; return v; }));
+    const pc=FRAGRANCES.flatMap(f=>SIZES.map(s=>{ const v=e.pack[f]?.[s]||0; tbox+=v; return v; }));
+    return[e.date,...mc,...pc,tb,tbox,e.chemical||0,e.tankNo||'',e.tankCap||0,...EMPLOYEES.map(emp=>e.attendance?.[emp]||'-'),e.notes||''];
+  });
+  const ws=XLSX.utils.aoa_to_sheet([h,...rows]); ws['!cols']=h.map(()=>({wch:14}));
+  XLSX.utils.book_append_sheet(wb,ws,'All Entries');
+  const ws2=XLSX.utils.aoa_to_sheet([['Date',...EMPLOYEES],...entries.map(e=>[e.date,...EMPLOYEES.map(emp=>e.attendance?.[emp]||'-')])]);
+  ws2['!cols']=[{wch:14},...EMPLOYEES.map(()=>({wch:16}))];
+  XLSX.utils.book_append_sheet(wb,ws2,'Attendance');
+  XLSX.writeFile(wb,'Phenyl_Report_'+today()+'.xlsx');
+  toast('✓ Excel downloaded!');
+}
+
+populateFilters();
+</script>
+
+<!-- Firebase loaded last to avoid init race -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" onload="onFirebaseLoaded()" onerror="onFirebaseError()"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+function onFirebaseError(){
+  setSyncUI('offline','No internet');
+  toast('No internet — running offline',false);
+}
+
+function onFirebaseLoaded(){
+  try{
+    const app = firebase.initializeApp({
+      apiKey: "AIzaSyABYQ9bPppq_YfStumpvGMgAmEal2Rj5xA",
+      authDomain: "inventory-tracker-84c2a.firebaseapp.com",
+      databaseURL: "https://inventory-tracker-84c2a-default-rtdb.firebaseio.com",
+      projectId: "inventory-tracker-84c2a",
+      storageBucket: "inventory-tracker-84c2a.firebasestorage.app",
+      messagingSenderId: "163041744486",
+      appId: "1:163041744486:web:b2b3e4f1755fe4c4a0bfa7"
+    });
+
+    DB = firebase.database();
+    FIREBASE_READY = true;
+
+    // Watch connection state
+    DB.ref('.info/connected').on('value', function(snap){
+      isOnline = !!snap.val();
+      if(isOnline){
+        setSyncUI('live','Live ✓');
+        pushLocalToFirebase();
+      } else {
+        setSyncUI('offline','Offline');
+      }
+    });
+
+    // REAL-TIME LISTENER — fires on every device instantly
+    DB.ref('phenyl_entries').on('value', function(snap){
+      mergeFirebaseData(snap.val());
+    }, function(err){
+      setSyncUI('offline','DB Error');
+      toast('DB Error: '+err.message, false);
+    });
+
+  } catch(err){
+    setSyncUI('offline','Init Error');
+    toast('Firebase init error: '+err.message, false);
+  }
+}
+</script>
+</body>
+</html>
